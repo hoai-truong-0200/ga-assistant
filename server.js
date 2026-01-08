@@ -19,6 +19,8 @@ const SLACK_CHANNEL_ONBOARDING =
   process.env.SLACK_CHANNEL_ONBOARDING || '#onboarding';
 const SLACK_CHANNEL_CONTRACT =
   process.env.SLACK_CHANNEL_CONTRACT || '#contract-reminder';
+const SLACK_CHANNEL_BIRTHDAY =
+  process.env.SLACK_CHANNEL_BIRTHDAY || '#birthday';
 
 const slack = new WebClient(SLACK_BOT_TOKEN);
 
@@ -173,6 +175,26 @@ app.post('/demo/contract-reminder', async (req, res) => {
   }
 });
 
+app.post('/demo/birthday', async (req, res) => {
+  try {
+    const { name, channel } = req.body || {};
+
+    if (!name || typeof name !== 'string' || name.trim() === '') {
+      return res.status(400).json({
+        ok: false,
+        error:
+          'Missing or invalid "name" field. Expected: { "name": "Nguyễn Văn A", "channel": "#optional" }',
+      });
+    }
+
+    const targetChannel = channel || SLACK_CHANNEL_BIRTHDAY;
+    await sendBirthdayMessage(name.trim(), targetChannel);
+    res.json({ ok: true, sentTo: targetChannel });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: String(err) });
+  }
+});
+
 async function sendOnboardingMessage() {
   const channel = SLACK_CHANNEL_ONBOARDING;
   const text = `Chào bạn 👋\nChào mừng bạn đến với công ty.\nDay 1 checklist:\n• Nội quy\n• Quy trình IT\n• Liên hệ HR\n📎 Tài liệu: (link nội bộ)`;
@@ -181,7 +203,27 @@ async function sendOnboardingMessage() {
 
 async function sendContractReminderMessage() {
   const channel = SLACK_CHANNEL_CONTRACT;
-  const text = `🔔 Demo nhắc hợp đồng (Phase 1)\n• Nhân viên: Nguyễn Văn A\n• Mã hợp đồng: HR-2024-015\n• Hết hạn: 30/09/2026\n👉 Vui lòng kiểm tra`;
+  const text = `🔔 **Nhắc hợp đồng - Cần xác nhận sắp tới**
+
+Hợp đồng dưới đây sắp hết hạn:
+
+📌 **Nhân viên:** Nguyễn Văn A
+📌 **Mã hợp đồng:** HR-2024-015
+📌 **Hết hạn:** 30/09/2026
+
+👉 **Hành động:** Vui lòng liên hệ HR Team để gia hạn hoặc xác nhận tiếp tục hợp đồng.
+
+💡 *Nếu đã xử lý, vui lòng bỏ qua thông báo này.*
+
+📧 HR: hr@company.internal | 📞 ext. 3000`;
+  return sendMessage(channel, text);
+}
+
+async function sendBirthdayMessage(name, channel) {
+  const { birthdayTemplates, pickVariant } = require('./templates');
+  const templates = birthdayTemplates(name);
+  const text = pickVariant(templates);
+  console.log(`[BIRTHDAY] Gửi tin nhắn sinh nhật cho ${name} tới ${channel}`);
   return sendMessage(channel, text);
 }
 

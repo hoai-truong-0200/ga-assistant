@@ -84,86 +84,121 @@ Khi URL thay đổi
  - Trường hợp B (Reserved domain): nếu bạn có reserved domain/ngrok paid plan, mở `ngrok.yml` và bỏ comment `hostname: your-reserved-subdomain.ngrok.io`, rồi chạy lệnh trên — URL sẽ ổn định.
  - Mẹo: nếu Slack không xác thực Request URL, kiểm tra logs của server (console) và inspect UI (`http://127.0.0.1:4040`) để xem lỗi chi tiết.
 
-## Phase-1: 5 Use Cases
+## Phase-1: 6 Use Cases
 
-Bot hiện hỗ trợ **5 use case** với rule-based routing và response variants (không rigid):
+Bot hiện hỗ trợ **6 use case** với rule-based routing và response variants (không rigid):
 
 ### Use Case 1: Quy trình xin nghỉ phép
 - **Trigger:** User hỏi "Quy trình xin nghỉ phép như thế nào?" (hoặc keywords: "nghỉ phép", "xin nghỉ", "leave")
 - **Response:** Bot trả lời quy trình 3 bước (form, quản lý, HR) với xác nhận thời gian xử lý
 - **Kênh:** Trả lời trong **kênh/DM nơi user hỏi** (không redirect)
-- **Variants:** 2-3 biến thể để không cứng nhắc
+- **Variants:** 3 biến thể để không cứng nhắc
+- **Source:** Nguồn: SOP-NHANSU-01 (demo)
 
 ### Use Case 2: Giấy xác nhận công tác
 - **Trigger:** User hỏi "Tôi cần giấy xác nhận công tác thì làm sao?" (hoặc keywords: "xác nhận công tác", "giấy xác nhận")
 - **Response:** Bot hướng dẫn dùng form FORM-HC-02, liên hệ HR, thời gian 1-2 ngày
 - **Kênh:** Trả lời trong **kênh/DM nơi user hỏi**
-- **Variants:** 2-3 biến thể
+- **Variants:** 3 biến thể
+- **Source:** Nguồn: FORM-HC-02 (demo)
 
 ### Use Case 3: Onboarding (Proactive)
 - **Trigger:** Endpoint `POST /demo/onboarding`
 - **Response:** Tin nhắn chào mừng với Day 1 checklist (nội quy, IT, HR)
 - **Kênh:** `SLACK_CHANNEL_ONBOARDING` (ví dụ: #onboarding)
-- **Test:** `curl -X POST http://localhost:3000/demo/onboarding`
+- **Test:**
+```bash
+curl -X POST http://localhost:3000/demo/onboarding
+```
 
 ### Use Case 4: Contract Reminder (Proactive + Cron)
 - **Trigger (Cron):** Nếu `DEMO_CRON_ENABLED=true`, cron chạy mỗi phút
 - **Trigger (Manual):** Endpoint `POST /demo/contract-reminder`
-- **Response:** Tin nhắn nhắc hợp đồng (nhân viên, mã, hạn, action)
+- **Response:** Tin nhắn nhắc hợp đồng (nhân viên, mã, hạn, action) + "Nếu đã xử lý, bỏ qua"
 - **Kênh:** `SLACK_CHANNEL_CONTRACT` (ví dụ: #contract-reminder)
-- **Test:** `curl -X POST http://localhost:3000/demo/contract-reminder`
-
-### Use Case 5: Out-of-Scope (Safe Fallback)
-- **Trigger:** User hỏi "Công ty có kế hoạch tăng lương năm nay không?" (hoặc keywords: "tăng lương", "kế hoạch", "tuyển dụng")
-- **Response:** Bot trả lời "Tôi không có thông tin..." + hướng dẫn liên hệ HR
-- **Kênh:** Trả lời trong **kênh/DM nơi user hỏi**
-- **Variants:** 2-3 biến thể an toàn
-
-## 9) Thử nghiệm
-
-### Test Use Case 1 (Leave Policy)
-```
-- Channel: thêm bot vào một channel bằng `/invite @YourBot`
-- Mention bot: `@yourbot Quy trình xin nghỉ phép như thế nào?`
-- DM: gửi DM cho bot với nội dung tương tự
-- Kỳ vọng: Bot trả lời chi tiết quy trình xin nghỉ
-```
-
-### Test Use Case 2 (Work Confirmation)
-```
-- Channel: `@yourbot Tôi cần giấy xác nhận công tác thì làm sao?`
-- DM: gửi DM cho bot: "Giấy xác nhận công tác"
-- Kỳ vọng: Bot hướng dẫn form FORM-HC-02 và thời gian xử lý
-```
-
-### Test Use Case 3 (Onboarding)
-```bash
-curl -X POST http://localhost:3000/demo/onboarding
-```
-- Kỳ vọng: Bot gửi tin nhắn chào mừng vào `SLACK_CHANNEL_ONBOARDING`
-
-### Test Use Case 4 (Contract Reminder)
+- **Test:**
 ```bash
 curl -X POST http://localhost:3000/demo/contract-reminder
 ```
-- Kỳ vọng: Bot gửi tin nhắn nhắc hợp đồng vào `SLACK_CHANNEL_CONTRACT` ngay lập tức
-- Hoặc nếu `DEMO_CRON_ENABLED=true`, chờ cron gửi mỗi phút
 
-### Test Use Case 5 (Out-of-Scope)
+### Use Case 5: Birthday Congratulations (Proactive - NEW)
+- **Trigger:** Endpoint `POST /demo/birthday`
+- **Request Body:**
+```json
+{
+  "name": "Nguyễn Văn A",
+  "channel": "#birthday"
+}
 ```
-- Channel: `@yourbot Công ty có kế hoạch tăng lương năm nay không?`
-- DM: "Kế hoạch tuyển dụng?"
-- Kỳ vọng: Bot trả lời an toàn "Tôi không có thông tin..." + hướng dẫn liên hệ HR
+- **Response:** Tin nhắn chúc mừng sinh nhật (warm, professional, 1–2 paragraphs)
+- **Kênh:** `SLACK_CHANNEL_BIRTHDAY` (ví dụ: #birthday), hoặc override trong request
+- **Test:**
+```bash
+curl -X POST http://localhost:3000/demo/birthday \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Nguyễn Văn A"}'
 ```
+- **Error Handling:** Trả về 400 nếu name không được cung cấp
+
+### Use Case 6: Out-of-Scope (Safe Fallback)
+- **Trigger:** User hỏi "Công ty có kế hoạch tăng lương năm nay không?" (hoặc keywords: "tăng lương", "kế hoạch", "tuyển dụng")
+- **Response:** Bot trả lời "Tôi không có thông tin..." + hướng dẫn liên hệ HR
+- **Kênh:** Trả lời trong **kênh/DM nơi user hỏi**
+- **Variants:** 2 biến thể an toàn
+
+---
+
+## 9) Thử nghiệm
+
+Xem chi tiết tại file **TESTING.md**.
+
+### Quick Test Commands
+
+**Onboarding:**
+```bash
+curl -X POST http://localhost:3000/demo/onboarding
+```
+
+**Contract Reminder:**
+```bash
+curl -X POST http://localhost:3000/demo/contract-reminder
+```
+
+**Birthday (New):**
+```bash
+curl -X POST http://localhost:3000/demo/birthday \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Nguyễn Văn A"}'
+```
+
+### Test Use Case 1 (Leave Policy) in Channel
+```
+@yourbot Quy trình xin nghỉ phép như thế nào?
+```
+
+### Test Use Case 2 (Work Confirmation) in DM
+```
+[gửi DM cho bot] Tôi cần giấy xác nhận công tác thì làm sao?
+```
+
+### Test Use Case 6 (Out-of-Scope) in Channel
+```
+@yourbot Công ty có kế hoạch tăng lương năm nay không?
+```
+
+---
 
 ## Architecture
 
 File chính:
-- `server.js` – server Express, xác thực signature, xử lý events, cron, endpoint
-- `scenario.js` – scenario router (Phase-1 rule-based) với 5 use case
-- `.env.example` – ví dụ biến môi trường
+- `server.js` – server Express, xác thực signature, xử lý events, cron, 3 endpoint (onboarding, contract-reminder, birthday)
+- `scenario.js` – scenario router (Phase-1 rule-based) với 6 use case
+- `templates.js` – response templates cho tất cả use case (variants, professional Vietnamese)
+- `.env.example` – ví dụ biến môi trường (kênh per use case)
 - `package.json` – script `dev` và `start`
 - `ngrok.yml` – cấu hình ngrok tunnel
+- `TESTING.md` – hướng dẫn kiểm tra chi tiết
+- `README.md` – tài liệu này
 
 ## Ghi chú kỹ thuật / Checklist cấu hình
 
@@ -171,9 +206,13 @@ File chính:
 - [x] Enable Event Subscriptions và thêm 2 Bot Events: `app_mention`, `message.im`
 - [x] Cập nhật Request URL với ngrok URL
 - [x] Install/Reinstall App nếu thay đổi scope
-- [x] **Thêm bot vào từng kênh:** `/invite @YourBot` trong #onboarding, #contract-reminder
+- [x] **Thêm bot vào từng kênh:** `/invite @YourBot` trong:
+  - #onboarding
+  - #contract-reminder
+  - #birthday
 - [x] Kiểm tra logs của server (xem reply có gửi đi không)
 - [x] Test cron (nếu bật) bằng cách quan sát logs mỗi phút
+- [x] Test tất cả 6 use case bằng TESTING.md
 
 ## Phase-2 Roadmap
 - Thêm RAG (simple vector DB + embeddings)
