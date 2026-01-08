@@ -1,0 +1,24 @@
+# Ngrok config cho Slack Bot Demo
+# Cách chạy: `ngrok start --config=ngrok.yml slack-bot`
+# - Nếu bạn có reserved domain: đặt `hostname: your.domain.ngrok.io` trong `tunnels.slack-bot`
+# - Nếu không có reserved domain: ngrok sẽ cung cấp URL công khai thay đổi sau mỗi lần khởi động
+# Region có thể thay đổi theo nhu cầu (mặc định: us)
+
+version: "2"
+tunnels:
+  slack-bot:
+    proto: http
+    addr: 3000
+    inspect: true
+    # region: us
+    # hostname: your-reserved-subdomain.ngrok.io  # <-- bỏ dấu # nếu bạn có reserved domain
+# Nếu bạn muốn dùng file cấu hình này với `ngrok start --config=ngrok.yml slack-bot`,
+# hãy đảm bảo authtoken đã được cài vào config toàn cục hoặc thêm vào file này như sau:
+#
+authtoken: 2EKSc6pyX7Ntav5Jv3McVqM5BJi_5ybWTN9Jhg1xoeDUhrGFE
+#
+# Không commit authtoken vào git. Thay vào đó, cài authtoken cục bộ bằng:
+#
+# ngrok config add-authtoken 2EKSc6pyX7Ntav5Jv3McVqM5BJi_5ybWTN9Jhg1xoeDUhrGFE
+#
+# 
